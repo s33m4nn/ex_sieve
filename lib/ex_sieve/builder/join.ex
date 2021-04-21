@@ -77,7 +77,7 @@ defmodule ExSieve.Builder.Join do
   defp join_build(query, {nil, relation}, as) do
     Code.eval_quoted(
       quote do
-        join(unquote(query), :inner, [p], a in assoc(p, unquote(relation)), as: unquote(as))
+        join(unquote(query), :left, [p], a in assoc(p, unquote(relation)), as: unquote(as))
       end
     )
   end
@@ -87,7 +87,7 @@ defmodule ExSieve.Builder.Join do
 
     Code.eval_quoted(
       quote do
-        join(unquote(query), :inner, [{unquote(parent), p}], a in assoc(p, unquote(relation)), as: unquote(as))
+        join(unquote(query), :left, [{unquote(parent), p}], a in assoc(p, unquote(relation)), as: unquote(as))
       end
     )
   end
