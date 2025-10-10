@@ -77,12 +77,13 @@ defmodule ExSieve.Builder.WhereTest do
     end
 
     test "return Ecto.Query with cast datetime" do
-      datetime = NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601()
-      params = %{"inserted_at_gteq" => datetime}
+      datetime_string = NaiveDateTime.utc_now() |> NaiveDateTime.to_iso8601()
+      params = %{"inserted_at_gteq" => datetime_string}
 
       grouping = Grouping.extract(params, Post, %Config{ignore_errors: true})
 
-      ecto = Post |> where([p], field(p, :inserted_at) >= ^datetime) |> inspect()
+      datetime_value = NaiveDateTime.from_iso8601!(datetime_string)
+      ecto = Post |> where([p], field(p, :inserted_at) >= ^datetime_value) |> inspect()
 
       assert ecto == where_build(Post, grouping)
     end
@@ -494,6 +495,30 @@ defmodule ExSieve.Builder.WhereTest do
     test "invalid predicate" do
       {_, ex_sieve} = ex_sieve_post_query(%{"id_lt_all" => [1, 2]}, false, false, false)
       assert {:error, {:predicate_not_found, "id_lt_all"}} = ex_sieve
+    end
+  end
+
+  describe "invalid date/datetime values" do
+    test "return error for invalid date value" do
+      params = %{"inserted_at_gteq" => "2025a-09-01"}
+      {_base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+      assert {:error, {:invalid_value, {"inserted_at_gteq", "2025a-09-01"}}} = ex_sieve
+    end
+
+    test "return error for invalid datetime value" do
+      params = %{"published_at_gteq" => "2025-13-01T00:00:00"}
+      {_base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+      assert {:error, {:invalid_value, {"published_at_gteq", "2025-13-01T00:00:00"}}} = ex_sieve
+    end
+
+    test "return query for valid datetime value" do
+      datetime = "2025-09-01T12:00:00"
+      params = %{"published_at_gteq" => datetime}
+      {base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+
+      expected_datetime = NaiveDateTime.from_iso8601!(datetime)
+      query = base |> where([p], field(p, :published_at) >= ^expected_datetime) |> inspect()
+      assert query == inspect(ex_sieve)
     end
   end
 

@@ -71,11 +71,52 @@ defmodule ExSieve.Builder.Where do
 
   # base predicates
   defp dynamic_predicate(predicate, attribute, values, _config) do
-    case validate_dynamic(predicate, attribute, values) do
-      :ok -> build_dynamic(predicate, attribute, values)
+    with :ok <- validate_dynamic(predicate, attribute, values),
+         {:ok, casted_values} <- cast_values(attribute, values) do
+      build_dynamic(predicate, attribute, casted_values)
+    end
+  end
+
+  # Cast values based on attribute type
+  defp cast_values(%Attribute{type: type} = attr, values) do
+    case cast_values_by_type(type, values, attr) do
+      {:ok, _} = result -> result
       {:error, _} = err -> err
     end
   end
+
+  defp cast_values_by_type(type, values, attr) when type in [:date, :time, :naive_datetime, :utc_datetime, :naive_datetime_usec, :utc_datetime_usec] do
+    values
+    |> Enum.reduce_while({:ok, []}, fn value, {:ok, acc} ->
+      case cast_value(type, value) do
+        {:ok, casted} -> {:cont, {:ok, [casted | acc]}}
+        :error -> {:halt, {:error, {:invalid_value, {Utils.rebuild_key(attr), value}}}}
+      end
+    end)
+    |> case do
+      {:ok, casted} -> {:ok, Enum.reverse(casted)}
+      error -> error
+    end
+  end
+
+  defp cast_values_by_type(_type, values, _attr), do: {:ok, values}
+
+  defp cast_value(:date, value) when is_binary(value), do: Date.from_iso8601(value)
+  defp cast_value(:date, %Date{} = value), do: {:ok, value}
+  defp cast_value(:time, value) when is_binary(value), do: Time.from_iso8601(value)
+  defp cast_value(:time, %Time{} = value), do: {:ok, value}
+  defp cast_value(:naive_datetime, value) when is_binary(value), do: NaiveDateTime.from_iso8601(value)
+  defp cast_value(:naive_datetime, %NaiveDateTime{} = value), do: {:ok, value}
+  defp cast_value(:naive_datetime_usec, value) when is_binary(value), do: NaiveDateTime.from_iso8601(value)
+  defp cast_value(:naive_datetime_usec, %NaiveDateTime{} = value), do: {:ok, value}
+  defp cast_value(:utc_datetime, value) when is_binary(value), do: DateTime.from_iso8601(value) |> normalize_datetime_result()
+  defp cast_value(:utc_datetime, %DateTime{} = value), do: {:ok, value}
+  defp cast_value(:utc_datetime_usec, value) when is_binary(value), do: DateTime.from_iso8601(value) |> normalize_datetime_result()
+  defp cast_value(:utc_datetime_usec, %DateTime{} = value), do: {:ok, value}
+  defp cast_value(_type, value), do: {:ok, value}
+
+  defp normalize_datetime_result({:ok, datetime, _offset}), do: {:ok, datetime}
+  defp normalize_datetime_result({:error, _}), do: :error
 
   for {predicate, allowed_types, allowed_values, _} <- Predicate.specs() do
     unless allowed_types == :all do

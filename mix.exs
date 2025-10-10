@@ -1,13 +1,13 @@
 defmodule ExSieve.Mixfile do
   use Mix.Project
 
-  @version "0.8.2"
+  @version "0.8.3"
 
   def project do
     [
       app: :ex_sieve,
       version: @version,
-      elixir: "~> 1.7",
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       package: package(),
       description: "Build filtred and sorted Ecto.Query struct from object based queries.",
@@ -32,14 +32,15 @@ defmodule ExSieve.Mixfile do
 
   defp deps do
     [
-      {:ecto, "~> 3.3"},
+      {:ecto, "~> 3.11"},
       {:credo, "~> 1.3", only: :dev},
       {:dialyxir, "~> 1.0", only: :dev},
       {:ex_doc, "~> 0.21", only: :dev},
-      {:ecto_sql, "~> 3.0", only: [:dev, :test]},
+      {:ecto_sql, "~> 3.11", only: [:dev, :test]},
       {:ex_machina, "~> 2.0", only: :test},
       {:postgrex, "~> 0.15", only: :test},
-      {:excoveralls, "~> 0.10", only: :test}
+      {:excoveralls, "~> 0.10", only: :test},
+      {:ssl_verify_fun, ">= 0.0.0", manager: :rebar3, override: true, only: :test}
     ]
   end
 

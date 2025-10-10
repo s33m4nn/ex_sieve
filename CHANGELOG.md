@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+ * Add validation for date/datetime/time values to prevent Ecto.Query.CastError crashes
+ * Invalid date values now return `{:error, {:invalid_value, {field, value}}}` instead of crashing
+
 ## 0.8.2 - 19/08/2021
  * Fix applications start, removing warnings on Elixir >= 1.11
 
