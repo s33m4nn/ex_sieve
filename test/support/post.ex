@@ -10,6 +10,7 @@ defmodule ExSieve.Post do
     field :published, :boolean
     field :published_at, :naive_datetime
     field :metadata, :map
+    field :status, Ecto.Enum, values: [:draft, :published, :archived]
 
     timestamps()
   end

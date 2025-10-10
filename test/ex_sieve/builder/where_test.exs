@@ -522,6 +522,28 @@ defmodule ExSieve.Builder.WhereTest do
     end
   end
 
+  describe "invalid enum values" do
+    test "return error for invalid enum value" do
+      params = %{"status_eq" => "invalid_status"}
+      {_base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+      assert {:error, {:invalid_value, {"status_eq", "invalid_status"}}} = ex_sieve
+    end
+
+    test "return query for valid enum value as string" do
+      params = %{"status_eq" => "draft"}
+      {base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+      query = base |> where([p], field(p, :status) == ^:draft) |> inspect()
+      assert query == inspect(ex_sieve)
+    end
+
+    test "return query for valid enum value as atom" do
+      params = %{"status_eq" => :published}
+      {base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+      query = base |> where([p], field(p, :status) == ^:published) |> inspect()
+      assert query == inspect(ex_sieve)
+    end
+  end
+
   describe "custom predicates" do
     test "return Ecto.Query for existent custom predicate" do
       {base, ex_sieve} = ex_sieve_post_query(%{"metadata_has_key" => ["foo"]}, false)

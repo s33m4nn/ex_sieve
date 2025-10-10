@@ -62,7 +62,7 @@ defmodule ExSieve.Node.Attribute do
     |> find_field(key)
     |> case do
       nil -> nil
-      field -> {field, :type |> module.__schema__(field) |> Ecto.Type.type()}
+      field -> {field, module.__schema__(:type, field)}
     end
   end
 

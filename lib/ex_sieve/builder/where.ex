@@ -74,6 +74,8 @@ defmodule ExSieve.Builder.Where do
     with :ok <- validate_dynamic(predicate, attribute, values),
          {:ok, casted_values} <- cast_values(attribute, values) do
       build_dynamic(predicate, attribute, casted_values)
+    else
+      {:error, _} = error -> error
     end
   end
 
@@ -85,6 +87,35 @@ defmodule ExSieve.Builder.Where do
     end
   end
 
+  # Handle Ecto.Enum types - correct pattern for the actual structure
+  defp cast_values_by_type({:parameterized, {Ecto.Enum, %{mappings: mappings}}}, values, attr) do
+    valid_atom_values = Keyword.keys(mappings)
+    valid_string_values = Enum.map(valid_atom_values, &Atom.to_string/1)
+
+    values
+    |> Enum.reduce_while({:ok, []}, fn value, {:ok, acc} ->
+      cond do
+        # If value is already an atom and in valid list
+        is_atom(value) and value in valid_atom_values ->
+          {:cont, {:ok, [value | acc]}}
+
+        # If value is a string and matches a valid enum value
+        is_binary(value) and value in valid_string_values ->
+          casted_value = String.to_atom(value)
+          {:cont, {:ok, [casted_value | acc]}}
+
+        # Otherwise, it's invalid
+        true ->
+          {:halt, {:error, {:invalid_value, {Utils.rebuild_key(attr), value}}}}
+      end
+    end)
+    |> case do
+      {:ok, casted} -> {:ok, Enum.reverse(casted)}
+      error -> error
+    end
+  end
+
+  # Handle date/time types
   defp cast_values_by_type(type, values, attr) when type in [:date, :time, :naive_datetime, :utc_datetime, :naive_datetime_usec, :utc_datetime_usec] do
     values
     |> Enum.reduce_while({:ok, []}, fn value, {:ok, acc} ->
