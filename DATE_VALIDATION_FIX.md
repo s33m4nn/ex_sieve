@@ -86,6 +86,8 @@ Repo.filter(Post, %{"status_eq" => "draft"})
 ## Supported Date/Time Types
 The validation now handles:
 - `:date` - ISO8601 date strings (e.g., "2025-09-01")
+  - **Lenient parsing**: Also accepts dates without leading zeros (e.g., "2025-10-1", "2025-1-5")
+  - Automatically normalizes to ISO8601 format before validation
 - `:time` - ISO8601 time strings (e.g., "12:30:00")
 - `:naive_datetime` - ISO8601 datetime strings (e.g., "2025-09-01T12:30:00")
 - `:naive_datetime_usec` - ISO8601 datetime strings with microseconds
@@ -98,18 +100,24 @@ The validation handles:
 - Accepts both string and atom representations
 - Converts strings to atoms when valid
 
-## Examples of Invalid Values Caught
+## Examples of Valid and Invalid Values
 
-### Invalid Dates
-- `"2025a-09-01"` - Letter in date
-- `"2025-13-01"` - Invalid month
-- `"2025-09-32"` - Invalid day
-- `"not-a-date"` - Completely invalid format
-- `"2025-13-01T00:00:00"` - Invalid month in datetime
+### Valid Dates (with lenient parsing)
+- `"2025-09-01"` - Standard ISO8601 ✓
+- `"2025-10-1"` - Without leading zero on day ✓ (normalized to "2025-10-01")
+- `"2025-1-5"` - Without leading zeros ✓ (normalized to "2025-01-05")
+- `"2025-9-3"` - Single digit month and day ✓ (normalized to "2025-09-03")
 
-### Invalid Enums
-- `"invalid_status"` - Not in the allowed enum values
-- `"invoicing_one_time2"` - Typo in enum value
-- Any value not defined in the enum's `:values` option
+### Invalid Dates (caught and return errors)
+- `"2025a-09-01"` - Letter in date ✗
+- `"2025-13-01"` - Invalid month ✗
+- `"2025-09-32"` - Invalid day ✗
+- `"not-a-date"` - Completely invalid format ✗
+- `"2025-13-01T00:00:00"` - Invalid month in datetime ✗
 
-All of these now return `{:error, {:invalid_value, ...}}` instead of causing a crash.
+### Invalid Enums (caught and return errors)
+- `"invalid_status"` - Not in the allowed enum values ✗
+- `"invoicing_one_time2"` - Typo in enum value ✗
+- Any value not defined in the enum's `:values` option ✗
+
+All invalid values now return `{:error, {:invalid_value, ...}}` instead of causing a crash.
