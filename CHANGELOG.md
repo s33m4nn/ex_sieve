@@ -3,6 +3,8 @@
 ## 0.8.3 - 10/10/2025
  * Add validation for date/datetime/time values to prevent Ecto.Query.CastError crashes
  * Add validation for Ecto.Enum values to prevent invalid enum value crashes
+ * Add lenient date parsing to handle dates without leading zeros (e.g., "2025-10-1" → "2025-10-01")
+ * Fix handling of all error formats from Date/DateTime parsing functions (`:error` and `{:error, reason}`)
  * Invalid date/enum values now return `{:error, {:invalid_value, {field, value}}}` instead of crashing
 
 ## 0.8.2 - 19/08/2021

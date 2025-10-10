@@ -520,6 +520,33 @@ defmodule ExSieve.Builder.WhereTest do
       query = base |> where([p], field(p, :published_at) >= ^expected_datetime) |> inspect()
       assert query == inspect(ex_sieve)
     end
+
+    test "return query for date without leading zeros" do
+      params = %{"inserted_at_gteq" => "2025-10-1"}
+      {base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+
+      # Should normalize to 2025-10-01
+      expected_date = ~D[2025-10-01]
+      query = base |> where([p], field(p, :inserted_at) >= ^expected_date) |> inspect()
+      assert query == inspect(ex_sieve)
+    end
+
+    test "return query for date with single digit month and day" do
+      params = %{"inserted_at_gteq" => "2025-1-5"}
+      {base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+      
+      # Should normalize to 2025-01-05
+      expected_date = ~D[2025-01-05]
+      query = base |> where([p], field(p, :inserted_at) >= ^expected_date) |> inspect()
+      assert query == inspect(ex_sieve)
+    end
+
+    test "return error for date with invalid format that returns error tuple" do
+      # Some invalid formats return {:error, :invalid_format} instead of :error
+      params = %{"inserted_at_gteq" => "not/a/date"}
+      {_base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
+      assert {:error, {:invalid_value, {"inserted_at_gteq", "not/a/date"}}} = ex_sieve
+    end
   end
 
   describe "invalid enum values" do

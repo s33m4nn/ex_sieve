@@ -121,6 +121,7 @@ defmodule ExSieve.Builder.Where do
     |> Enum.reduce_while({:ok, []}, fn value, {:ok, acc} ->
       case cast_value(type, value) do
         {:ok, casted} -> {:cont, {:ok, [casted | acc]}}
+        {:error, _} -> {:halt, {:error, {:invalid_value, {Utils.rebuild_key(attr), value}}}}
         :error -> {:halt, {:error, {:invalid_value, {Utils.rebuild_key(attr), value}}}}
       end
     end)
@@ -132,22 +133,54 @@ defmodule ExSieve.Builder.Where do
 
   defp cast_values_by_type(_type, values, _attr), do: {:ok, values}
 
-  defp cast_value(:date, value) when is_binary(value), do: Date.from_iso8601(value)
+  # Cast date values with lenient parsing
+  defp cast_value(:date, value) when is_binary(value) do
+    case Date.from_iso8601(value) do
+      {:ok, _} = result ->
+        result
+      _ ->
+        # Try to normalize dates like "2025-10-1" to "2025-10-01"
+        case normalize_and_parse_date(value) do
+          {:ok, _} = result -> result
+          _ -> :error
+        end
+    end
+  end
   defp cast_value(:date, %Date{} = value), do: {:ok, value}
+
   defp cast_value(:time, value) when is_binary(value), do: Time.from_iso8601(value)
   defp cast_value(:time, %Time{} = value), do: {:ok, value}
+
   defp cast_value(:naive_datetime, value) when is_binary(value), do: NaiveDateTime.from_iso8601(value)
   defp cast_value(:naive_datetime, %NaiveDateTime{} = value), do: {:ok, value}
+
   defp cast_value(:naive_datetime_usec, value) when is_binary(value), do: NaiveDateTime.from_iso8601(value)
   defp cast_value(:naive_datetime_usec, %NaiveDateTime{} = value), do: {:ok, value}
+
   defp cast_value(:utc_datetime, value) when is_binary(value), do: DateTime.from_iso8601(value) |> normalize_datetime_result()
   defp cast_value(:utc_datetime, %DateTime{} = value), do: {:ok, value}
+
   defp cast_value(:utc_datetime_usec, value) when is_binary(value), do: DateTime.from_iso8601(value) |> normalize_datetime_result()
   defp cast_value(:utc_datetime_usec, %DateTime{} = value), do: {:ok, value}
+
   defp cast_value(_type, value), do: {:ok, value}
 
+  # Normalize dates like "2025-10-1" to "2025-10-01" and parse
+  defp normalize_and_parse_date(value) do
+    case String.split(value, "-") do
+      [year, month, day] ->
+        normalized = "#{String.pad_leading(year, 4, "0")}-#{String.pad_leading(month, 2, "0")}-#{String.pad_leading(day, 2, "0")}"
+        case Date.from_iso8601(normalized) do
+          {:ok, _} = result -> result
+          _ -> :error
+        end
+      _ ->
+        :error
+    end
+  end
+
   defp normalize_datetime_result({:ok, datetime, _offset}), do: {:ok, datetime}
-  defp normalize_datetime_result({:error, _}), do: :error
+  defp normalize_datetime_result(_), do: :error
 
   for {predicate, allowed_types, allowed_values, _} <- Predicate.specs() do
     unless allowed_types == :all do
