@@ -13,7 +13,7 @@ defmodule ExSieve.CustomPredicate do
     end
   end
 
-  @custom_predicates Application.get_env(:ex_sieve, :custom_predicates, [])
+  @custom_predicates Application.compile_env(:ex_sieve, :custom_predicates, [])
 
   for {cp, frag} <- @custom_predicates do
     arg_names =
