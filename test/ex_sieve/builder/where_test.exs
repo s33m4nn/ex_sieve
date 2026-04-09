@@ -472,6 +472,12 @@ defmodule ExSieve.Builder.WhereTest do
       {_base, ex_sieve} = ex_sieve_post_query(%{"title_not_null" => "foo"}, false, false, false)
       assert {:error, {:invalid_value, {"title", "foo"}}} = ex_sieve
     end
+
+    test ":not_null works for datetime fields" do
+      {base, ex_sieve} = ex_sieve_post_query(%{"inserted_at_not_null" => true}, false)
+      query = base |> where([p], not is_nil(field(p, :inserted_at))) |> inspect()
+      assert query == ex_sieve
+    end
   end
 
   describe "all/any predicates" do
@@ -534,7 +540,7 @@ defmodule ExSieve.Builder.WhereTest do
     test "return query for date with single digit month and day" do
       params = %{"inserted_at_gteq" => "2025-1-5"}
       {base, ex_sieve} = ex_sieve_post_query(params, false, false, false)
-      
+
       # Should normalize to 2025-01-05
       expected_date = ~D[2025-01-05]
       query = base |> where([p], field(p, :inserted_at) >= ^expected_date) |> inspect()

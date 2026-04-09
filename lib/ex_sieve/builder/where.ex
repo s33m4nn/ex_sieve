@@ -70,6 +70,15 @@ defmodule ExSieve.Builder.Where do
   end
 
   # base predicates
+  defp dynamic_predicate(predicate, attribute, values, _config)
+       when predicate in [:null, :not_null, :blank, :present] do
+    with :ok <- validate_dynamic(predicate, attribute, values) do
+      build_dynamic(predicate, attribute, values)
+    else
+      {:error, _} = error -> error
+    end
+  end
+
   defp dynamic_predicate(predicate, attribute, values, _config) do
     with :ok <- validate_dynamic(predicate, attribute, values),
          {:ok, casted_values} <- cast_values(attribute, values) do
