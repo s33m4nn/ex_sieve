@@ -8,7 +8,7 @@ defmodule ExSieve.Node.Sort do
   alias ExSieve.Config
   alias ExSieve.Node.{Attribute, Sort}
 
-  @directions ~w(desc asc)
+  @directions ~w(desc_nulls_last desc_nulls_first asc_nulls_last asc_nulls_first desc asc)
 
   @spec extract(String.t() | list(String.t()), module(), Config.t()) ::
           list(

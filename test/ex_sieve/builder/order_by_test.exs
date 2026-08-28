@@ -22,6 +22,14 @@ defmodule ExSieve.Builder.OrderByTest do
       assert original == built
     end
 
+    test "return Ecto.Query with order by desc_nulls_last id" do
+      sorts = [%Sort{direction: :desc_nulls_last, attribute: %Attribute{name: :id, parent: [], type: :id}}]
+
+      original = Comment |> order_by(desc_nulls_last: :id) |> inspect()
+      built = Comment |> order_by_build(sorts) |> inspect()
+      assert original == built
+    end
+
     test "return Ecto.Query order by asc id and post body" do
       sorts = [
         %Sort{direction: :asc, attribute: %Attribute{name: :id, parent: [], type: :id}},

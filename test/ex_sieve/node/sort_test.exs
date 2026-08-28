@@ -24,6 +24,11 @@ defmodule ExSieve.Node.SortTest do
       assert [{:error, {:direction_not_found, "foo"}}] == Sort.extract("post_body foo", Comment, %Config{})
     end
 
+    test "accept desc_nulls_last direction" do
+      sort = %Sort{direction: :desc_nulls_last, attribute: %Attribute{name: :id, parent: [], type: :id}}
+      assert [sort] == Sort.extract("id desc_nulls_last", Comment, %Config{})
+    end
+
     test "return {:error, :attribute_not_found}" do
       assert [{:error, {:attribute_not_found, "tid"}}] == Sort.extract("tid asc", Comment, %Config{})
     end
